@@ -28,6 +28,9 @@ namespace RecruitmentPortal.Core.Entity
         public string Password { get; set; } = string.Empty;
 
         public DateTime? CreatedDate { get; set; } = DateTime.Now;
+
+        public ICollection<UserRole> UserRoles { get; set; }  = new List<UserRole>();
+
         public bool IsActive { get; set; }
 
     }
