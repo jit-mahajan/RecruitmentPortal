@@ -18,7 +18,7 @@ namespace RecruitmentPortal.Core.Entity
 
         [Required]
         [StringLength(15, MinimumLength = 10, ErrorMessage = "Mobile number must be between 10 and 15 characters.")]
-        public int ContactNo { get; set; }
+        public string ContactNo { get; set; }
 
         [Required]
         [EmailAddress]
@@ -29,9 +29,10 @@ namespace RecruitmentPortal.Core.Entity
 
         public DateTime? CreatedDate { get; set; } = DateTime.Now;
 
-        public ICollection<UserRole> UserRoles { get; set; }  = new List<UserRole>();
-
         public bool IsActive { get; set; }
+
+
+        public ICollection<UserRole> UserRoles { get; set; }
 
     }
 }

@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using RecruitmentPortal.Core;
 using RecruitmentPortal.Core.Entity;
+using RecruitmentPortal.Core.Models;
 using RecruitmentPortal.Infrastructure.Data;
 using RecruitmentPortal.Services.IServices;
 using System;
@@ -36,36 +38,47 @@ namespace RecruitmentPortal.Services.Sevices
         {
             _context = context;
         }
-        public async Task<ActionResult> RegisterAsync(Users users)
+        public async Task<ActionResult> RegisterAsync(RegisterUserDto model)
         {
             try
             {
-                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == users.Email);
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
                 if (existingUser != null)
                 {
-                    return new ConflictObjectResult(new { message = "Username already exists" });
+                    return new ConflictObjectResult(new { message = "Email already exists" });
                 }
-           
-             
-                if (!IsPasswordValid(users.Password))
+
+                if (model.Password != model.ConfirmPassword)
+                {
+                    return new BadRequestObjectResult(new { message = "Passwords do not match" });
+                }
+
+                if (!IsPasswordValid(model.Password))
                 {
                     return new BadRequestObjectResult(new { message = "Password must be at least 8 characters long and contain at least one uppercase letter, one special character, and one numeric character." });
                 }
 
-                string hashedPassword = HelperMethods.PasswordHelper.HashPassword(users.Password);     //.HashPassword(users.Password);
+                string hashedPassword = HelperMethods.PasswordHelper.HashPassword(model.Password);
 
-
-                Users user = new Users
+                var user = new Users
                 {
-                    Name = users.Name,
-                    Gender = users.Gender,
-                    ContactNo = users.ContactNo,
-                    Email = users.Email,
+                    Name = model.Name,
+                    Gender = model.Gender,
+                    ContactNo = model.ContactNo,
+                    Email = model.Email,
                     Password = hashedPassword,
-                    IsActive = true
+                    IsActive = true,
+
+                    UserRoles = new List<UserRole>
+                    {
+                        new UserRole
+                        {
+                            RoleId = _context.Roles.Single(r => r.RoleName == "Candidate").RoleId
+                        }
+                    }
                 };
-                
-                await _context.AddAsync(user);
+
+                await _context.Users.AddAsync(user);
                 await _context.SaveChangesAsync();
 
                 return new OkObjectResult(new { message = "User Created Successfully" });
@@ -79,8 +92,101 @@ namespace RecruitmentPortal.Services.Sevices
                 };
             }
         }
+        public async Task<IActionResult> RegisterRecruiter(RegisterUserDto model)
+        {
+            try
+            {
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+                if (existingUser != null)
+                {
+                    return new ConflictObjectResult(new { message = "Email already exists" });
+                }
 
-        [NonAction]
+                if (model.Password != model.ConfirmPassword)
+                {
+                    return new BadRequestObjectResult(new { message = "Passwords do not match" });
+                }
+
+                if (!IsPasswordValid(model.Password))
+                {
+                    return new BadRequestObjectResult(new { message = "Password does not meet complexity requirements" });
+                }
+
+                string hashedPassword = HelperMethods.PasswordHelper.HashPassword(model.Password);
+
+                var user = new Users
+                {
+                    Name = model.Name,
+                    Gender = model.Gender,
+                    ContactNo = model.ContactNo,
+                    Email = model.Email,
+                    Password = hashedPassword,
+                    IsActive = true,
+                    UserRoles = new[]
+                    {
+                        new UserRole
+                        {
+                            RoleId = _context.Roles.Single(r => r.RoleName == "Recruiter").RoleId
+                        }
+                    }
+                
+                };
+
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+
+                return new OkObjectResult(new { message = "Recruiter created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return new ObjectResult(new { message = "An error occurred while creating the recruiter", error = ex.Message })
+                {
+                    StatusCode = 500
+                };
+            }
+        }
+
+        public async Task<IActionResult> UpdateRecruiter(int recruiterId, RegisterUserDto model)
+        {
+            try
+            {
+                var recruiter = await _context.Users
+                    .Include(u => u.UserRoles)
+                    .FirstOrDefaultAsync(u => u.UserId == recruiterId);
+
+                if (recruiter == null)
+                {
+                    return new NotFoundObjectResult(new { message = "Recruiter not found" });
+                }
+
+                // Only allow updates by admin
+                if (!recruiter.UserRoles.Any(ur => ur.Role.RoleName == "Admin"))
+                {
+                    return new ForbidResult();
+                }
+
+                // Update recruiter properties
+                recruiter.Name = model.Name;
+                recruiter.Gender = model.Gender;
+                recruiter.ContactNo = model.ContactNo;
+                recruiter.Email = model.Email;
+
+                // Password update logic can be added if needed
+
+                _context.Users.Update(recruiter);
+                await _context.SaveChangesAsync();
+
+                return new OkObjectResult(new { message = "Recruiter updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return new ObjectResult(new { message = "An error occurred while updating the recruiter", error = ex.Message })
+                {
+                    StatusCode = 500
+                };
+            }
+        }
+
         public bool IsPasswordValid(string? password)
         {
 
@@ -88,13 +194,12 @@ namespace RecruitmentPortal.Services.Sevices
             {
                 return false;
             }
-            // Define regular expression pattern for password complexity
+            
             string pattern = @"^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$";
 
-            // Check if password matches the pattern
             return Regex.IsMatch(password, pattern);
         }
 
-
-    }
+       
+     }
 }

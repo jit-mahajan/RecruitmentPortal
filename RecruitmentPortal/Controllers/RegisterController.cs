@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RecruitmentPortal.Core.Entity;
+using RecruitmentPortal.Core.Models;
 using RecruitmentPortal.Infrastructure.Data;
 using RecruitmentPortal.Services.IServices;
 using RecruitmentPortal.Services.Sevices;
@@ -19,10 +21,26 @@ namespace RecruitmentPortal.Controllers
 
 
         [HttpPost("api/register")]
-        public async Task<ActionResult> Register(Users users)
+        public async Task<ActionResult> Register(RegisterUserDto model)
         {
-            return await _registrationService.RegisterAsync(users);
+            return await _registrationService.RegisterAsync(model);
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("api/register-recruiter")]
+
+        public async Task<IActionResult> RegisterRecruiter(RegisterUserDto model)
+        {
+            return await _registrationService.RegisterRecruiter(model);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("api/update-recruiter/{recruiterId}")]
+        public async Task<IActionResult> UpdateRecruiter(int recruiterId, RegisterUserDto model)
+        {
+            return await _registrationService.UpdateRecruiter(recruiterId, model);
+        }
+
 
     }
 }

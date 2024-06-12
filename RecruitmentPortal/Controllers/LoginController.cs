@@ -25,24 +25,8 @@ namespace RecruitmentPortal.Controllers
         [HttpPost("api/login")]
         public async Task<IActionResult> Login(string email, string password)
         {
-            try
-            {
-                var loginResult = await _loginService.LoginAsync(email, password);
-                if (loginResult != null)
-                {
-                    return Ok("Login Successful");
-                }
-                else
-                {
-                   
-                    return Unauthorized(new { message = "Invalid email or password" });
-                }
-            }
-
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while adding the job", error = ex.Message });
-            }
+            
+            return await _loginService.LoginAsync(email, password);
         }
 
         [HttpPost("api/reset-password")]

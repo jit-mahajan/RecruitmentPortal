@@ -85,8 +85,6 @@ namespace RecruitmentPortal.Services.Sevices
         }
 
 
-
-
         [NonAction]
         private string GenerateToken(Users users)
         {
@@ -101,16 +99,18 @@ namespace RecruitmentPortal.Services.Sevices
 
 
             /*
+
+           
             // Add roles as claims
-            var userRoles = _context.UserRoles.Where(u => u.UserId == users.id).ToList();
+            var userRoles = _context.UserRoles.Where(u => u.UserId == users.UserId).ToList();
             var roleIds = userRoles.Select(u => u.RoleId).ToList();
-            var roles = _context.Roles.Where(r => roleIds.Contains(r.id)).ToList();
+            var roles = _context.Roles.Where(r => roleIds.Contains(r.RoleId)).ToList();
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role.Name)); // Use ClaimTypes.Role for role claims
             }
 
-            */
+           */
 
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
