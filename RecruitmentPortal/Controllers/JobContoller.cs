@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentPortal.Core.Entity;
+using RecruitmentPortal.Core.Models;
 using RecruitmentPortal.Services.IServices;
 using RecruitmentPortal.Services.Sevices;
+using System.Security.Claims;
 
 namespace RecruitmentPortal.Controllers
 {
@@ -17,15 +19,21 @@ namespace RecruitmentPortal.Controllers
 
 
         [HttpPost("add-job")]
-        [Authorize(Roles = "Recruter")]
-        public async Task<ActionResult> AddJob(Jobs job)
+        [Authorize(Roles = "Recruiter")]
+        public async Task<ActionResult> AddJob(JobDto jobDto)
         {
-            return await _iJobs.AddJobAsync(job);
+            var userIdClaim = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized(); // Handle case where user identity is not found
+            }
+            var RecruiterName = userIdClaim.Value;
+            return await _iJobs.AddJobAsync(jobDto, RecruiterName);
         }
 
 
         [HttpGet("GetAllJobs")]
-        [Authorize(Roles = "Admin,Recruter")]
+        [Authorize(Roles = "Admin,Recruiter")]
         public async Task<ActionResult<IEnumerable<Jobs>>> GetAllJobs()
         {
 

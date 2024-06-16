@@ -2,10 +2,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using RecruitmentPortal.Core.Entity;
+using RecruitmentPortal.Core.Models;
 using RecruitmentPortal.Infrastructure.Data;
 using RecruitmentPortal.Services.IServices;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,22 +25,34 @@ namespace RecruitmentPortal.Services.Sevices
             _context = context;
         }
 
-        public async Task<ActionResult> AddJobAsync(Jobs job)
+        public async Task<ActionResult> AddJobAsync(JobDto jobDto, string recruiterName)
         {
-            Jobs jobs = new Jobs();
 
-            jobs.JobTitle = job.JobTitle;
-            jobs.Description = job.Description;
-            jobs.CompanyName = job.CompanyName;
-            jobs.Location = job.Location;
-            jobs.PostedDate = job.PostedDate;
-            jobs.JobType = job.JobType;
-            jobs.Salary = job.Salary;
-            jobs.Qualifications = job.Qualifications;
+            int? recruiterId = await GetUserIdByUsernameAsync(recruiterName);
+
+            if (recruiterId == null)
+            {
+                return new NotFoundObjectResult(new { message = "Recruiter not found" });
+            }
+
+            var job = new Jobs
+            {
+                JobTitle = jobDto.JobTitle,
+                Description = jobDto.Description,
+                CompanyName = jobDto.CompanyName,
+                Location = jobDto.Location,
+                JobType = jobDto.JobType,
+                Salary = jobDto.Salary,
+                Qualifications = jobDto.Qualifications,
+                PostedDate = DateTime.Now,
+                IsActive = true,
+                RecruiterId = recruiterId,
+            };
+
 
             try
             {
-                await _context.AddAsync(jobs);
+                await _context.AddAsync(job);
                 await _context.SaveChangesAsync();
 
                 // Return success response
@@ -54,7 +68,12 @@ namespace RecruitmentPortal.Services.Sevices
             }
         }
 
-        
+        public async Task<int?> GetUserIdByUsernameAsync(string username)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Name == username);
+            return user?.UserId;
+        }
+
         public async Task<ActionResult<IEnumerable<Jobs>>> GetAllJobsAsync()
         {
             try
@@ -72,6 +91,30 @@ namespace RecruitmentPortal.Services.Sevices
             }
 
         }
+
+        public async Task<IEnumerable<JobDto>> GetJobsOrderedByRecentAsync(int pageNumber)
+        {
+            var jobs = await _context.Jobs
+                .OrderByDescending(j => j.PostedDate)
+                .Skip((pageNumber - 1) * 10)
+                .Take(10)
+                .Select(j => new JobDto
+                {
+                    
+                    JobTitle = j.JobTitle,
+                    Description = j.Description,
+                    CompanyName = j.CompanyName,
+                    Location = j.Location,
+                    JobType = j.JobType,
+                    Salary  = j.Salary,
+                    Qualifications = j.Qualifications
+        
+    })
+                .ToListAsync();
+
+            return jobs;
+        }
+
         public async Task<ActionResult> DeleteJobAsync(int id)
         {
             try

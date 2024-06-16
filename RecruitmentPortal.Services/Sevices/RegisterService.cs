@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace RecruitmentPortal.Services.Sevices
 {
-     public class RegisterService :IRegistration
+     public class RegisterService : IRegistration
     {
 
        // private IConfiguration _config;

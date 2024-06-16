@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentPortal.Core.Models;
 using RecruitmentPortal.Services.IServices;
+using RecruitmentPortal.Services.Sevices;
 
 namespace RecruitmentPortal.Controllers
 {
@@ -16,33 +17,19 @@ namespace RecruitmentPortal.Controllers
             _iAdminServices = iAdminServices;
         }
 
-       
+
         [HttpGet("api/getAll-candidates")]
-        public async Task<ActionResult<IEnumerable<CandidateDto>>> GetPaginatedCandidates(int pageNumber = 1, int pageSize = 10)
+        public async Task<ActionResult<IEnumerable<CandidateDto>>> GetAllCandidatesAsync(int pageNumber = 1)
         {
-            try
-            {
-                var candidates = await _iAdminServices.GetAllCandidatesAsync(pageNumber);
-                return Ok(candidates);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while fetching candidates", error = ex.Message });
-            }
+            var candidates = await _iAdminServices.GetAllCandidatesAsync(pageNumber);
+            return Ok(candidates);
         }
 
         [HttpGet("api/getAll-recruiters")]
-        public async Task<ActionResult<IEnumerable<RecruiterDto>>> GetPaginatedRecruiters(int pageNumber = 1, int pageSize = 10)
+        public async Task<ActionResult<IEnumerable<RecruiterDto>>> GetAllRecruitersAsync(int pageNumber = 1)
         {
-            try
-            {
-                var recruiters = await _iAdminServices.GetAllRecruitersAsync(pageNumber);
-                return Ok(recruiters);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while fetching recruiters", error = ex.Message });
-            }
+            var recruiters = await _iAdminServices.GetAllRecruitersAsync(pageNumber);
+            return Ok(recruiters);
         }
 
     }

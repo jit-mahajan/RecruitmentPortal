@@ -3,13 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using RecruitmentPortal.Infrastructure.Data;
+using RecruitmentPortal.Services.Email;
 using RecruitmentPortal.Services.IServices;
 using RecruitmentPortal.Services.Sevices;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
 builder.Services.AddControllers();
 
@@ -32,7 +32,8 @@ builder.Services.AddControllers();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("UserPolicy", policy => policy.RequireRole("User"));
+    options.AddPolicy("RecruiterPolicy", policy => policy.RequireRole("Recruiter"));
+    options.AddPolicy("CandidatePolicy", policy => policy.RequireRole("Candidate"));
 });
 
 builder.Services.AddHttpContextAccessor();
@@ -41,6 +42,12 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IRegistration, RegisterService>();
 builder.Services.AddScoped<ILogin, LoginService>();
+builder.Services.AddScoped<IJobs, JobService>();
+builder.Services.AddScoped<IAdminServices, AdminServices>();
+builder.Services.AddScoped<IRecruiter, RecruiterService>();
+builder.Services.AddScoped<IApplicationForm, ApplicationFormService>();
+builder.Services.AddScoped<ILogin, LoginService>();
+builder.Services.AddScoped<IEmail, EmailService>();
 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -89,6 +96,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
 
 
 

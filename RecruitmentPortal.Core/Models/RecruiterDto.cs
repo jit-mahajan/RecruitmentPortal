@@ -8,7 +8,6 @@ namespace RecruitmentPortal.Core.Models
 {
     public class RecruiterDto
     {
-        public int Id { get; set; }
 
         public string Name { get; set; }
 

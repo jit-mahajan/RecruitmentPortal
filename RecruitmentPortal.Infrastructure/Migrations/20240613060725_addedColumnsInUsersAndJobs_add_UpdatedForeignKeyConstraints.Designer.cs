@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RecruitmentPortal.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using RecruitmentPortal.Infrastructure.Data;
 namespace RecruitmentPortal.Infrastructure.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240613060725_addedColumnsInUsersAndJobs_add_UpdatedForeignKeyConstraints")]
+    partial class addedColumnsInUsersAndJobs_add_UpdatedForeignKeyConstraints
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -213,7 +216,7 @@ namespace RecruitmentPortal.Infrastructure.Migrations
                     b.HasOne("RecruitmentPortal.Core.Entity.Users", "Recruiter")
                         .WithMany("PostedJobs")
                         .HasForeignKey("RecruiterId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Recruiter");

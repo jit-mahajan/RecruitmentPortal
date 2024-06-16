@@ -58,6 +58,33 @@ namespace RecruitmentPortal.Infrastructure.Data
                 .HasOne(ur => ur.Role)
                 .WithMany(r => r.UserRoles)
                 .HasForeignKey(ur => ur.RoleId);
+
+
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.User)
+                .WithMany(u => u.UserRoles)
+                .HasForeignKey(ur => ur.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.Role)
+                .WithMany(r => r.UserRoles)
+                .HasForeignKey(ur => ur.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+           
+            // Application entity configuration
+            modelBuilder.Entity<JobApplication>()
+                .HasOne(a => a.Jobs)
+                .WithMany(j => j.JobApplications)
+                .HasForeignKey(a => a.JobId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<JobApplication>()
+                .HasOne(a => a.Users)
+                .WithMany(u => u.JobApplications)
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
     }

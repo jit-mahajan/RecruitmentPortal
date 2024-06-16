@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace RecruitmentPortal.Core.Entity
 {
@@ -33,6 +34,10 @@ namespace RecruitmentPortal.Core.Entity
 
 
         public ICollection<UserRole> UserRoles { get; set; }
+
+        public ICollection<Jobs> PostedJobs { get; set; }
+
+        public ICollection<JobApplication> JobApplications { get; set; }
 
     }
 }

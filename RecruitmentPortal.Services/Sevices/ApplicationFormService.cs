@@ -2,7 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using RecruitmentPortal.Core.Entity;
+using RecruitmentPortal.Core.Models;
 using RecruitmentPortal.Infrastructure.Data;
+using RecruitmentPortal.Services.Email;
+using RecruitmentPortal.Services.IServices;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,27 +15,29 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace RecruitmentPortal.Services.Sevices
 {
-    public class ApplicationFormService
+    public class ApplicationFormService : IApplicationForm
     {
         private IConfiguration _config;
         private readonly MyDbContext _context;
-      //  private readonly IEmailService _emailService;
+        private readonly IEmail _iEmail;
 
-        public ApplicationFormService(IConfiguration configuration, MyDbContext context)
+        public ApplicationFormService(IConfiguration configuration, MyDbContext context, IEmail iEmail)
         {
             _config = configuration;
             _context = context;
-        
+            _iEmail = iEmail;
+
         }
 
-        /*
+
     
-        public async Task<ActionResult> ApplyToJobAsync(int jobId, int userId, string description)
+        public async Task<ActionResult> ApplyToJobAsync(JobApplicationDto jobApplicationDto)
         {
             try
             {
-               
-                var existingApplication = await _context.JobApplications.FirstOrDefaultAsync(app => app.JobId == jobId && app.UserId == userId);  //.FirstOrDefaultAsync(app => app.JobId == jobId && app.UserId == userId);
+                // Check if the user has already applied for this job
+                var existingApplication = await _context.JobApplications
+                    .FirstOrDefaultAsync(app => app.JobId == jobApplicationDto.JobId && app.UserId == jobApplicationDto.UserId);
 
                 if (existingApplication != null)
                 {
@@ -40,40 +45,42 @@ namespace RecruitmentPortal.Services.Sevices
                     return new ConflictObjectResult(new { message = "You have already applied for this job" });
                 }
 
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+                // Optionally: Check if the job exists and is active
+                var jobExists = await _context.Jobs.AnyAsync(j => j.JobId == jobApplicationDto.JobId && j.IsActive);
+                if (!jobExists)
+                {
+                    return new NotFoundObjectResult(new { message = "Job not found or is inactive" });
+                }
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == jobApplicationDto.UserId);
                 var userEmail = user?.Email;
                 if (userEmail != null)
                 {
-                   // await _emailService.SendEmailAsync(userEmail, "Job Application Submitted", "Your job application has been submitted successfully.");
+                     
+                     await _iEmail.SendEmailAsync(userEmail, "Job Application Submitted", "Your job application has been submitted successfully.");
                 }
 
-                // Create a new JobApplication instance
                 var jobApplication = new JobApplication
                 {
-                    JobId = jobId,
-                    UserId = userId,
-                   
-                    ApplicationDate = DateTime.Now,
-                    Skills = j,
-                    ModifiedDate = DateTime.Now,
-                    IsActive = true
+                    JobId = jobApplicationDto.JobId,
+                    UserId = jobApplicationDto.UserId,
+                    AppliedDate = DateTime.Now 
                 };
 
-                await _context.JobApplications.AddAsync(jobApplication);
+                _context.JobApplications.Add(jobApplication);
                 await _context.SaveChangesAsync();
 
-                return new OkObjectResult(new { message = "Application submitted successfully" });
+                return new OkObjectResult(new { message = "Job application submitted successfully" });
             }
             catch (Exception ex)
             {
-                // Log the exception here (not shown in this code)
-                return new ObjectResult(new { message = "An error occurred while submitting the application", error = ex.Message })
+                return new ObjectResult(new { message = "An error occurred while adding the job", error = ex.Message })
                 {
                     StatusCode = 500
                 };
             }
+            
         }
-      */
      
     }
 }

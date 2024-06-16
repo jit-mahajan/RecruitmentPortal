@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using RecruitmentPortal.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,6 @@ namespace RecruitmentPortal.Services.IServices
 {
     public interface IApplicationForm
     {
-        public Task<ActionResult> ApplyToJobAsync(int jobId, int userId, string description);
+        public Task<ActionResult> ApplyToJobAsync(JobApplicationDto jobApplicationDto);
     }
 }

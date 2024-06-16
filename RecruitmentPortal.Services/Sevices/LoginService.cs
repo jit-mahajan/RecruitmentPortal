@@ -97,9 +97,6 @@ namespace RecruitmentPortal.Services.Sevices
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
 
-
-            /*
-
            
             // Add roles as claims
             var userRoles = _context.UserRoles.Where(u => u.UserId == users.UserId).ToList();
@@ -107,10 +104,8 @@ namespace RecruitmentPortal.Services.Sevices
             var roles = _context.Roles.Where(r => roleIds.Contains(r.RoleId)).ToList();
             foreach (var role in roles)
             {
-                claims.Add(new Claim(ClaimTypes.Role, role.Name)); // Use ClaimTypes.Role for role claims
+                claims.Add(new Claim(ClaimTypes.Role, role.RoleName)); // Use ClaimTypes.Role for role claims
             }
-
-           */
 
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
