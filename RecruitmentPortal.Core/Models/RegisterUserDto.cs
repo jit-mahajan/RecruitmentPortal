@@ -16,7 +16,7 @@ namespace RecruitmentPortal.Core.Models
 
         [Required]
         [StringLength(15, MinimumLength = 10, ErrorMessage = "Mobile number must be between 10 and 15 characters.")]
-        public string ContactNo { get; set; }  // Change from int to string for better validation
+        public string ContactNo { get; set; }  
 
         [Required]
         [EmailAddress]

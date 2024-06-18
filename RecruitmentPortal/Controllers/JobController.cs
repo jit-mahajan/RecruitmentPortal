@@ -8,11 +8,12 @@ using System.Security.Claims;
 
 namespace RecruitmentPortal.Controllers
 {
-    public class JobContoller : ControllerBase
+    [Route("api/[controller]")]
+    public class JobController : ControllerBase
     {
 
         private readonly IJobs _iJobs;
-        public JobContoller(IJobs iJobs)
+        public JobController(IJobs iJobs)
         {
             _iJobs = iJobs;
         }
@@ -31,23 +32,46 @@ namespace RecruitmentPortal.Controllers
             return await _iJobs.AddJobAsync(jobDto, RecruiterName);
         }
 
+        /*
 
-        [HttpGet("GetAllJobs")]
+        [HttpGet("api/getAll-jobs")]
         [Authorize(Roles = "Admin,Recruiter")]
         public async Task<ActionResult<IEnumerable<Jobs>>> GetAllJobs()
         {
 
             return await _iJobs.GetAllJobsAsync();
         }
+        */
 
+        
+        [HttpGet("getjobs-byRecent")]
+        [Authorize(Roles = "Candidate,Admin,Recruiter")]
+        public async Task<IActionResult> GetJobsOrderedByRecent(int pageNumber = 1)
+        {
+            try
+            {
+                var jobs = await _iJobs.GetJobsOrderedByRecentAsync(pageNumber);
+                return Ok(jobs);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching jobs", error = ex.Message });
+            }
+        }
 
 
         [HttpDelete("delete-job/{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult> DeleteJob(int id)
+        public async Task<ActionResult> RemoveJob(int id)
         {
-            return await _iJobs.DeleteJobAsync(id);
+            return await _iJobs.RemoveJobAsync(id);
         }
+
+
+
+
+
+
     }
 
 }

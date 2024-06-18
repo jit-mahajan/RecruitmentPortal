@@ -21,7 +21,7 @@ namespace RecruitmentPortal.Core.Models
 
         public string Location { get; set; }
 
-        public string JobType { get; set; } // e.g., Full-time, Part-time, Contract
+        public string JobType { get; set; } 
 
         [Required]
         public decimal? Salary { get; set; }

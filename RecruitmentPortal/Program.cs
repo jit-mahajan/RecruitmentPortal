@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using OfficeOpenXml;
 using RecruitmentPortal.Infrastructure.Data;
+using RecruitmentPortal.Infrastructure.Mappings;
 using RecruitmentPortal.Services.Email;
 using RecruitmentPortal.Services.IServices;
 using RecruitmentPortal.Services.Sevices;
@@ -10,11 +12,19 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddAutoMapper(typeof(MappingProfile));            
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+
+.AddJsonOptions(options =>
+ {
+     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
+ });
 
 
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -40,13 +50,10 @@ builder.Services.AddHttpContextAccessor();
 
 
 
-builder.Services.AddScoped<IRegistration, RegisterService>();
-builder.Services.AddScoped<ILogin, LoginService>();
+
+builder.Services.AddScoped<IUser, UserService>();
 builder.Services.AddScoped<IJobs, JobService>();
-builder.Services.AddScoped<IAdminServices, AdminServices>();
-builder.Services.AddScoped<IRecruiter, RecruiterService>();
 builder.Services.AddScoped<IApplicationForm, ApplicationFormService>();
-builder.Services.AddScoped<ILogin, LoginService>();
 builder.Services.AddScoped<IEmail, EmailService>();
 
 

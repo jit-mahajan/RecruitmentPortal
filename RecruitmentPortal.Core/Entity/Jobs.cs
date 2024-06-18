@@ -21,7 +21,7 @@ namespace RecruitmentPortal.Core.Entity
         public string CompanyName { get; set; }
         public string Location { get; set; }
         public DateTime PostedDate { get; set; }
-        public string JobType { get; set; } // e.g., Full-time, Part-time, Contract
+        public string JobType { get; set; } 
 
         [Required]
         public decimal? Salary { get; set; }
@@ -32,8 +32,8 @@ namespace RecruitmentPortal.Core.Entity
         public bool IsActive { get; set; }
 
         public int? RecruiterId { get; set; }
-        public Users Recruiter { get; set; }
+        public Users Recruiter { get; set; }           //null
 
-        public ICollection<JobApplication> JobApplications { get; set; }
+        public ICollection<JobApplication> JobApplications { get; set; }    //null
     }
 }

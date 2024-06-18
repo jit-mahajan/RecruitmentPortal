@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using RecruitmentPortal.Core.Entity;
 using RecruitmentPortal.Core.Models;
 using RecruitmentPortal.Infrastructure.Data;
+using RecruitmentPortal.Services.HelperMethods;
 using RecruitmentPortal.Services.IServices;
 using System;
 using System.Collections.Generic;
@@ -67,55 +68,7 @@ namespace RecruitmentPortal.Services.Sevices
                 };
             }
         }
-
-        public async Task<int?> GetUserIdByUsernameAsync(string username)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Name == username);
-            return user?.UserId;
-        }
-
-        public async Task<ActionResult<IEnumerable<Jobs>>> GetAllJobsAsync()
-        {
-            try
-            {
-                var jobs = await _context.Jobs.ToListAsync();
-
-                return new OkObjectResult(jobs);
-            }
-            catch (Exception ex)
-            {
-                return new ObjectResult(new { message = "An error occurred while requesting jobs", error = ex.Message })
-                {
-                    StatusCode = 500
-                };
-            }
-
-        }
-
-        public async Task<IEnumerable<JobDto>> GetJobsOrderedByRecentAsync(int pageNumber)
-        {
-            var jobs = await _context.Jobs
-                .OrderByDescending(j => j.PostedDate)
-                .Skip((pageNumber - 1) * 10)
-                .Take(10)
-                .Select(j => new JobDto
-                {
-                    
-                    JobTitle = j.JobTitle,
-                    Description = j.Description,
-                    CompanyName = j.CompanyName,
-                    Location = j.Location,
-                    JobType = j.JobType,
-                    Salary  = j.Salary,
-                    Qualifications = j.Qualifications
-        
-    })
-                .ToListAsync();
-
-            return jobs;
-        }
-
-        public async Task<ActionResult> DeleteJobAsync(int id)
+        public async Task<ActionResult> RemoveJobAsync(int id)
         {
             try
             {
@@ -137,10 +90,38 @@ namespace RecruitmentPortal.Services.Sevices
                     StatusCode = 500
                 };
             }
+        }   
+
+        public async Task<int?> GetUserIdByUsernameAsync(string username)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Name == username);
+            return user?.UserId;
         }
 
+        
+        public async Task<IEnumerable<JobDto>> GetJobsOrderedByRecentAsync(int pageNumber)
+        {
+            var jobs = await _context.Jobs
+                .OrderByDescending(j => j.PostedDate)
+                .Skip((pageNumber - 1) * 10)
+                .Take(10)
+                .Select(j => new JobDto
+                {
+                    
+                    JobTitle = j.JobTitle,
+                    Description = j.Description,
+                    CompanyName = j.CompanyName,
+                    Location = j.Location,
+                    JobType = j.JobType,
+                    Salary  = j.Salary,
+                    Qualifications = j.Qualifications
+        
+                })
+                .ToListAsync();
 
+            return jobs;
+        }
 
-
+       
     }
 }

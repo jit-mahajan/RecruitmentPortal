@@ -12,8 +12,11 @@ namespace RecruitmentPortal.Core.Models
         public DateTime AppliedDate { get; set; }
         public int JobId { get; set; }
         public int UserId { get; set; }
+        public JobDto Job { get; set; }
         public string UserName { get; set; }= string.Empty;
 
+        public  string CompanyName { get; set; }
+        public CandidateDto Candidate { get; set; }
         public string JobTitle { get; set; }
 
     }

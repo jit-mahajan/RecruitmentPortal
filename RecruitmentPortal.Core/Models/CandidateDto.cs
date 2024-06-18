@@ -15,5 +15,6 @@ namespace RecruitmentPortal.Core.Models
         public string Email {  get; set; }
 
         public DateTime? CreatedDate { get; set; }
+
     }
 }
