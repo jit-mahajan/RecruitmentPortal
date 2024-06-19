@@ -39,7 +39,8 @@ namespace RecruitmentPortal.Controllers
         }
 
 
-        [HttpGet("candidate/{candidateId}/recent")]
+        [HttpGet("candidate/{candidateId}/recentApplications")]
+        [Authorize(Roles = "Candidate")]
         public async Task<ActionResult<List<JobApplicationDto>>> GetRecentJobApplications(int candidateId)
         {
             var jobApplications = await _iApplicationForm.GetJobApplicationsAppliedByCandidateAsync(candidateId);
@@ -57,36 +58,14 @@ namespace RecruitmentPortal.Controllers
         }
         */
 
-        [HttpGet("all-applications")]
+        [HttpGet("recruiter/{recruiterId}/appliedJobApplications")]
         [Authorize(Roles = "Recruiter")]
-        public async Task<ActionResult<PaginatedList<JobApplicationDto>>> GetApplicationsForRecruiter(int pageNumber = 1)
+        public async Task<ActionResult<PaginatedList<JobApplicationDto>>> GetApplicationsForRecruiter(int recruiterId, int pageNumber = 1)
         {
-            try
-            {
-                var usernameOrEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(usernameOrEmail))
-                {
-                    return Unauthorized(new { message = "Login required" });
-                }
 
-                // Get the user ID using the static method
-                var userId = await _iUser.GetUserIdAsync(usernameOrEmail);    
-                if (userId == 0)
-                {
-                    return NotFound(new { message = "User not found" });
-                }
+            var applications = await _iApplicationForm.GetAppliedApplicationsForRecruiterAsync(recruiterId, pageNumber);
+            return Ok(applications);
 
-                var applications = await _iApplicationForm.GetApplicationsForRecruiterAsync(userId, pageNumber);
-                return Ok(applications);
-            }
-            catch (ApplicationException ex)
-            {
-                return StatusCode(500, new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An unexpected error occurred.", error = ex.Message });
-            }
         }
 
         [HttpGet("export/job-applications")]

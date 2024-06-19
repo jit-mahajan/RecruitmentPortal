@@ -98,7 +98,7 @@ namespace RecruitmentPortal.Services.Sevices
             await _context.SaveChangesAsync();
         }
 
-        public async Task<PaginatedList<JobApplicationDto>> GetApplicationsForRecruiterAsync(int? recruiterId, int pageNumber)
+        public async Task<PaginatedList<JobApplicationDto>> GetAppliedApplicationsForRecruiterAsync(int? recruiterId, int pageNumber)
         {
             try
             {
@@ -113,7 +113,8 @@ namespace RecruitmentPortal.Services.Sevices
                         JobId = app.JobId,
                         UserId = app.UserId,
                         UserName = app.Users.Name,
-                        JobTitle = app.Jobs.JobTitle
+                        JobTitle = app.Jobs.JobTitle,
+                        CompanyName = app.Jobs.CompanyName
                     });
 
                 return await PaginatedList<JobApplicationDto>.CreateAsync(query, pageNumber);
@@ -128,17 +129,22 @@ namespace RecruitmentPortal.Services.Sevices
         public async Task<List<JobApplicationDto>> GetJobApplicationsAppliedByCandidateAsync(int candidateId)
         {
             var jobApplications = await _context.JobApplications
-           .Include(j => j.Jobs)  // Eager load the job entity
-           .Where(j => j.UserId == candidateId)
-           .OrderByDescending(j => j.AppliedDate)
-           .Select(j => new JobApplicationDto
-            {
-                JobApplicationId = j.JobApplicationId,
-                JobTitle = j.Jobs.JobTitle,  // Assuming Job has a Title property
-                CompanyName = j.Jobs.CompanyName,  // Assuming Job has a Company property with a Name property
-                AppliedDate = j.AppliedDate
-            })
-            .ToListAsync();
+                            .Include(j => j.Jobs) 
+                            .Include(j => j.Users) 
+                            .Where(j => j.UserId == candidateId)
+                            .OrderByDescending(j => j.AppliedDate)
+                            .Select(j => new JobApplicationDto
+                            {
+                                JobApplicationId = j.JobApplicationId,
+                                JobId = j.JobId,
+                                UserId = j.UserId,
+                                UserName = j.Users.Name, 
+                                JobTitle = j.Jobs.JobTitle, 
+                                CompanyName = j.Jobs.CompanyName,
+                                AppliedDate = j.AppliedDate
+                            })
+                            .ToListAsync();
+
 
             return jobApplications;
         }

@@ -17,7 +17,7 @@ namespace RecruitmentPortal.Services.IServices
         // Task<PaginatedList<JobApplicationDto>> GetJobApplicationsAsync(int pageNumber);
 
         Task<List<JobApplicationDto>> GetJobApplicationsAppliedByCandidateAsync(int candidateId);
-        Task<PaginatedList<JobApplicationDto>> GetApplicationsForRecruiterAsync(int? recruiterId, int pageNumber);
+        Task<PaginatedList<JobApplicationDto>> GetAppliedApplicationsForRecruiterAsync(int? recruiterId, int pageNumber);
 
         Task<string> ExportCandidatesAppliedToJobsAsync();
 

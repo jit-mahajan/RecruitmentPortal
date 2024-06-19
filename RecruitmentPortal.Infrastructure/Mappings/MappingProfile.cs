@@ -11,6 +11,7 @@ namespace RecruitmentPortal.Infrastructure.Mappings
 {
     public class MappingProfile : Profile
     {
+        /*
         public MappingProfile()
         {
             CreateMap<JobApplication, JobApplicationDto>()
@@ -19,6 +20,6 @@ namespace RecruitmentPortal.Infrastructure.Mappings
             CreateMap<Jobs, JobDto>();
             CreateMap<Users, CandidateDto>();
         }
-
+        */
     }
 }

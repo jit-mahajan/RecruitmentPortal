@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -26,6 +27,7 @@ namespace RecruitmentPortal.Core.Entity
         public string Email { get; set; } = string.Empty;
 
         [Required]
+        [JsonIgnore]
         public string Password { get; set; } = string.Empty;
 
         public DateTime? CreatedDate { get; set; } = DateTime.Now;
