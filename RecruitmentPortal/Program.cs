@@ -8,6 +8,7 @@ using RecruitmentPortal.Infrastructure.Mappings;
 using RecruitmentPortal.Services.Email;
 using RecruitmentPortal.Services.IServices;
 using RecruitmentPortal.Services.Sevices;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+
+            
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var token = context.SecurityToken as JwtSecurityToken;
+                if (token != null)
+                {
+                    var tokenString = token.RawData;
+                    var tokenService = context.HttpContext.RequestServices.GetRequiredService<IToken>();
+                    if (!tokenService.IsTokenValid(tokenString))
+                    {
+                        context.Fail("Token has been revoked.");
+                    }
+                }
+                await Task.CompletedTask;
+            }
         };
     });
 
@@ -55,6 +76,7 @@ builder.Services.AddScoped<IUser, UserService>();
 builder.Services.AddScoped<IJobs, JobService>();
 builder.Services.AddScoped<IApplicationForm, ApplicationFormService>();
 builder.Services.AddScoped<IEmail, EmailService>();
+builder.Services.AddScoped<IToken, TokenService>();
 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -19,6 +19,7 @@ namespace RecruitmentPortal.Services.IServices
 
         public Task<ActionResult> LoginAsync(string email, string password);
 
+       
         public Task<ActionResult> ResetPasswordAsync(string email, string newPassword);
 
         public int GetCurrentUserId();

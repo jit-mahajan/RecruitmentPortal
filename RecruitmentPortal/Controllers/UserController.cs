@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentPortal.Core.Models;
 using RecruitmentPortal.Services.IServices;
+using RecruitmentPortal.Services.Sevices;
 
 namespace RecruitmentPortal.Controllers
 {
@@ -11,9 +12,11 @@ namespace RecruitmentPortal.Controllers
     {
 
         private readonly IUser _iUser;
-        public UserController(IUser iUser)
+        private readonly IToken _iToken;
+        public UserController(IUser iUser, IToken iToken)
         {
             _iUser = iUser;
+            _iToken = iToken;
         }
 
         [HttpPost("register")]
@@ -28,6 +31,21 @@ namespace RecruitmentPortal.Controllers
         {
 
             return await _iUser.LoginAsync(email, password);
+        }
+
+        [Authorize]
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            var token = HttpContext.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest(new { message = "Token is missing." });
+            }
+
+            _iToken.InvalidateToken(token);
+            return Ok(new { message = "Successfully logged out." });
         }
 
         [Authorize]

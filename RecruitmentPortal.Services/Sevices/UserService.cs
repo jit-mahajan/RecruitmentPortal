@@ -14,6 +14,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Authentication;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -26,11 +27,13 @@ namespace RecruitmentPortal.Services.Sevices
         private IConfiguration _config;
         private readonly MyDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        public UserService (IConfiguration configuration, MyDbContext context, IHttpContextAccessor httpContextAccessor)
+        private readonly IToken _itoken;
+        public UserService (IConfiguration configuration, MyDbContext context, IHttpContextAccessor httpContextAccessor, IToken itoken)
         {
             _config = configuration;
             _context = context;
             _httpContextAccessor = httpContextAccessor;
+            _itoken = itoken;   
         }
         public async Task<ActionResult> RegisterAsync(RegisterUserDto model)
         {
@@ -153,19 +156,16 @@ namespace RecruitmentPortal.Services.Sevices
                     return new NotFoundObjectResult(new { message = "Recruiter not found" });
                 }
 
-                // Only allow updates by admin
+             
                 if (!recruiter.UserRoles.Any(ur => ur.Role.RoleName == "Admin"))
                 {
                     return new ForbidResult();
                 }
 
-                // Update recruiter properties
                 recruiter.Name = model.Name;
                 recruiter.Gender = model.Gender;
                 recruiter.ContactNo = model.ContactNo;
                 recruiter.Email = model.Email;
-
-                // Password update logic can be added if needed
 
                 _context.Users.Update(recruiter);
                 await _context.SaveChangesAsync();
@@ -203,7 +203,7 @@ namespace RecruitmentPortal.Services.Sevices
 
                 if (user != null)
                 {
-                    var tokenString = GenerateToken(user);
+                    var tokenString = _itoken.GenerateToken(user);
                     return new OkObjectResult(new { token = tokenString });
                 }
 
@@ -217,6 +217,8 @@ namespace RecruitmentPortal.Services.Sevices
                 };
             }
         }
+
+
 
         public async Task<ActionResult> ResetPasswordAsync(string email, string newPassword)
         {
@@ -244,38 +246,7 @@ namespace RecruitmentPortal.Services.Sevices
         }
 
 
-        private string GenerateToken(Users users)
-        {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            var claims = new List<Claim> {
-            new Claim(JwtRegisteredClaimNames.Sub, users.Name),
-            new Claim(JwtRegisteredClaimNames.Email, users.Email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            };
-
-
-            var userRoles = _context.UserRoles.Where(u => u.UserId == users.UserId).ToList();
-            var roleIds = userRoles.Select(u => u.RoleId).ToList();
-            var roles = _context.Roles.Where(r => roleIds.Contains(r.RoleId)).ToList();
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role.RoleName)); 
-            }
-
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(10),
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
-
+        
         private Task<Users> AuthenticateUserAsync(string email, string password)
         {
 
@@ -286,7 +257,7 @@ namespace RecruitmentPortal.Services.Sevices
             {
                 throw new AuthenticationException("Invalid username or password");
             }
-            return Task.FromResult(user);
+            return  Task.FromResult(user);
         }
 
         public int GetCurrentUserId()
@@ -360,23 +331,26 @@ namespace RecruitmentPortal.Services.Sevices
         public async Task<bool> RemoveCandidateAsync(int candidateID)
         {
             var candidate = await _context.Users.FindAsync(candidateID);
+            var user = await _context.Users
+                        .Include(u => u.UserRoles)
+                        .Include(u => u.PostedJobs)
+                        .Include(u => u.JobApplications)
+                        .FirstOrDefaultAsync(u => u.UserId == candidateID);
 
-            if (candidate == null)
+            if (user != null)
             {
-                throw new ArgumentException("User not found");
-            }
+                // Check for and handle related entities before deletion
+                if (user.UserRoles.Any() || user.PostedJobs.Any() || user.JobApplications.Any())
+                {
+                    throw new InvalidOperationException("Cannot delete user with related entities.");
+                }
 
-            string role = await GetRoleName.GetUserRoleAsync(candidateID, _context);
+                _context.Users.Remove(user);
+                await _context.SaveChangesAsync();
 
-            if (!role.Contains("Candidate"))
-            {
-                throw new InvalidOperationException("User is not a Candidate");
+
             }
-            _context.Users.Remove(candidate);
-            await _context.SaveChangesAsync();
             return true;
-
-
         }
 
         public async Task<bool> RemoveRecruiterAsync(int recruiterId)

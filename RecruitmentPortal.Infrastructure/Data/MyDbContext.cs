@@ -26,9 +26,10 @@ namespace RecruitmentPortal.Infrastructure.Data
         public DbSet<UserRole> UserRoles { get; set; }
 
         public DbSet<JobApplication> JobApplications { get; set; }
+        public DbSet<BlacklistedToken> BlacklistedTokens { get; set; }
 
 
-      
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
