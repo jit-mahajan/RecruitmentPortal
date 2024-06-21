@@ -32,16 +32,7 @@ namespace RecruitmentPortal.Controllers
             return await _iJobs.AddJobAsync(jobDto, RecruiterName);
         }
 
-        /*
 
-        [HttpGet("api/getAll-jobs")]
-        [Authorize(Roles = "Admin,Recruiter")]
-        public async Task<ActionResult<IEnumerable<Jobs>>> GetAllJobs()
-        {
-
-            return await _iJobs.GetAllJobsAsync();
-        }
-        */
 
         
         [HttpGet("getjobs-byRecent")]

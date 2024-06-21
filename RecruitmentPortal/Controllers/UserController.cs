@@ -66,7 +66,7 @@ namespace RecruitmentPortal.Controllers
 
         
 
-        [HttpDelete("delete-candidate/{candidateId}")]
+        [HttpDelete("delete-candidate")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> RemoveCandidate(int id)
         {
@@ -107,18 +107,18 @@ namespace RecruitmentPortal.Controllers
         }
 
 
-        [HttpDelete("delete-Recruiter/{RecruiterId}")]
+        [HttpDelete("delete-Recruiter")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> RemoveRecruiter(int id)
         {
             bool result = await _iUser.RemoveRecruiterAsync(id);
             if (result)
             {
-                return Ok(new { message = "Candidate removed successfully" });
+                return Ok(new { message = "Recruiter removed successfully" });
             }
             else
             {
-                return NotFound(new { message = "Candidate not found" });
+                return NotFound(new { message = "Recruiter not found" });
             }
         }
 

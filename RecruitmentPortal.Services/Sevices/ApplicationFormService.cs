@@ -52,12 +52,14 @@ namespace RecruitmentPortal.Services.Sevices
                     return new NotFoundObjectResult(new { message = "Job not found or is inactive" });
                 }
 
+
+                var jobTitle = jobApplicationDto.JobTitle;
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == jobApplicationDto.UserId);
                 var userEmail = user?.Email;
                 if (userEmail != null)
                 {
 
-                    await _iEmail.SendEmailAsync(userEmail, "Job Application Submitted", "Your job application has been submitted successfully.");
+                    await _iEmail.SendEmailAsync(userEmail, "Job Application", $"Your job application for Role {jobTitle} submitted successfully.");
                 }
 
                 var jobApplication = new JobApplication
@@ -81,22 +83,69 @@ namespace RecruitmentPortal.Services.Sevices
             }
         }
 
-       
 
-        public async Task ApplyToMultipleJobsAsync(int UserId, List<int> jobIds)
+
+        public async Task<ActionResult> ApplyToMultipleJobsAsync(int userId, List<int> jobIds)
         {
-            var applications = jobIds.Select(jobId => new JobApplication
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
             {
-                
-                UserId = UserId,
-                JobId = jobId,
-                AppliedDate = DateTime.UtcNow,
+                return new NotFoundObjectResult(new { message = "User not found" });
+            }
 
-        });
+            var userEmail = user.Email;
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return new BadRequestObjectResult(new { message = "User email is missing" });
+            }
 
-            _context.JobApplications.AddRange(applications);           
-            await _context.SaveChangesAsync();
+            var results = new List<object>();
+
+            foreach (var jobId in jobIds)
+            {
+                try
+                {
+                    var existingApplication = await _context.JobApplications
+                        .FirstOrDefaultAsync(app => app.JobId == jobId && app.UserId == userId);
+
+                    if (existingApplication != null)
+                    {
+                        results.Add(new { JobId = jobId, message = "You have already applied for this job" });
+                        continue;
+                    }
+
+                    var jobExists = await _context.Jobs.AnyAsync(j => j.JobId == jobId && j.IsActive);
+                    if (!jobExists)
+                    {
+                        results.Add(new { JobId = jobId, message = "Job not found or is inactive" });
+                        continue;
+                    }
+
+                    var jobApplication = new JobApplication
+                    {
+                        JobId = jobId,
+                        UserId = userId,
+                        AppliedDate = DateTime.UtcNow
+                    };
+
+                    _context.JobApplications.Add(jobApplication);
+                    await _context.SaveChangesAsync();
+
+                    // Send email notification
+                    var jobTitle = (await _context.Jobs.FindAsync(jobId))?.JobTitle ?? "the job";
+                    await _iEmail.SendEmailAsync(userEmail, "Job Application", $"Your job application for Role {jobTitle} submitted successfully.");
+
+                    results.Add(new { JobId = jobId, message = "Job application submitted successfully" });
+                }
+                catch (Exception ex)
+                {
+                    results.Add(new { JobId = jobId, message = "An error occurred while adding the job", error = ex.Message });
+                }
+            }
+
+            return new OkObjectResult(results);
         }
+
 
         public async Task<PaginatedList<JobApplicationDto>> GetAppliedApplicationsForRecruiterAsync(int? recruiterId, int pageNumber)
         {

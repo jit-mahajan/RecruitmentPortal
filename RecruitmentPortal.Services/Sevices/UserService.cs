@@ -250,7 +250,7 @@ namespace RecruitmentPortal.Services.Sevices
         private Task<Users> AuthenticateUserAsync(string email, string password)
         {
 
-            string hashedPassword = HelperMethods.PasswordHelper.HashPassword(password);
+            string hashedPassword = PasswordHelper.HashPassword(password);
             var user = _context.Users.FirstOrDefault(u => u.Email == email && u.Password == hashedPassword);
 
             if (user == null)
@@ -330,42 +330,63 @@ namespace RecruitmentPortal.Services.Sevices
 
         public async Task<bool> RemoveCandidateAsync(int candidateID)
         {
-            var candidate = await _context.Users.FindAsync(candidateID);
+            string role = await GetRoleName.GetUserRoleAsync(candidateID, _context);
+            if (!role.Contains("Candidate"))
+            {
+                throw new InvalidOperationException("User is not a Candidate");
+            }
+
             var user = await _context.Users
                         .Include(u => u.UserRoles)
-                        .Include(u => u.PostedJobs)
                         .Include(u => u.JobApplications)
                         .FirstOrDefaultAsync(u => u.UserId == candidateID);
-
-            if (user != null)
+            if (user == null)
             {
-                // Check for and handle related entities before deletion
-                if (user.UserRoles.Any() || user.PostedJobs.Any() || user.JobApplications.Any())
-                {
-                    throw new InvalidOperationException("Cannot delete user with related entities.");
-                }
-
-                _context.Users.Remove(user);
-                await _context.SaveChangesAsync();
-
-
+                throw new InvalidOperationException("Candidate not Found");
             }
+        
+          
+            _context.UserRoles.RemoveRange(user.UserRoles);
+            _context.JobApplications.RemoveRange(user.JobApplications);
+            await _context.SaveChangesAsync();
+
+            if  (user.UserRoles.Any() || user.JobApplications.Any())
+            {
+                throw new InvalidOperationException("Cannot delete Recruiter with related entities.");
+            }
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+
             return true;
         }
 
         public async Task<bool> RemoveRecruiterAsync(int recruiterId)
         {
-            var recruiter = await _context.Users.FindAsync(recruiterId);
-            if (recruiter == null)
+            string role = await GetRoleName.GetUserRoleAsync(recruiterId, _context);
+            if (!role.Contains("Recruiter"))
             {
-                throw new ArgumentException("User not found");
+                throw new InvalidOperationException("User is not a Recruiter");
             }
 
-            string role = await GetRoleName.GetUserRoleAsync(recruiterId, _context);
+            var recruiter = await _context.Users
+                .Include (u => u.UserRoles)
+                .Include(r => r.PostedJobs)
+                .FirstOrDefaultAsync(u => u.UserId == recruiterId);               
 
-            if (!role.Contains("Candidate"))
+
+            if (recruiter == null)
             {
-                throw new InvalidOperationException("User is not a Candidate");
+                throw new ArgumentException("Recruiter not found");
+            }
+
+            _context.UserRoles.RemoveRange(recruiter.UserRoles);
+            _context.Jobs.RemoveRange(recruiter.PostedJobs);
+            await _context.SaveChangesAsync();
+
+            if (recruiter.UserRoles.Any() || recruiter.PostedJobs.Any())
+            {
+                throw new InvalidOperationException("Cannot delete Recruiter with related entities.");
             }
             _context.Users.Remove(recruiter);
             await _context.SaveChangesAsync();
@@ -414,7 +435,6 @@ namespace RecruitmentPortal.Services.Sevices
         {
             return await GetIdByName.GetUserId(_context, usernameOrEmail);
         }
-
 
 
     }

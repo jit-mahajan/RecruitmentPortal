@@ -72,11 +72,17 @@ namespace RecruitmentPortal.Services.Sevices
         {
             try
             {
-                var job = await _context.Jobs.FindAsync(id);
+                var job = await _context.Jobs
+                    .Include(j => j.JobApplications)
+                    .FirstOrDefaultAsync(j => j.JobId == id);
+
                 if (job == null)
                 {
                     return new NotFoundObjectResult(new { message = "Enter a valid Job Id" });
                 }
+
+                _context.JobApplications.RemoveRange(job.JobApplications);
+                await _context.SaveChangesAsync();
 
                 _context.Jobs.Remove(job);
                 await _context.SaveChangesAsync();

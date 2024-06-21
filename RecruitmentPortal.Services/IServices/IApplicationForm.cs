@@ -12,7 +12,7 @@ namespace RecruitmentPortal.Services.IServices
     public interface IApplicationForm
     {
         Task<ActionResult> ApplyToJobAsync(JobApplicationDto jobApplicationDto);
-        Task ApplyToMultipleJobsAsync(int candidateId, List<int> jobIds);
+        Task<ActionResult> ApplyToMultipleJobsAsync(int userId, List<int> jobIds);
 
         // Task<PaginatedList<JobApplicationDto>> GetJobApplicationsAsync(int pageNumber);
 
