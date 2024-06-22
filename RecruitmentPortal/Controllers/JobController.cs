@@ -26,7 +26,7 @@ namespace RecruitmentPortal.Controllers
             var userIdClaim = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
             {
-                return Unauthorized(); // Handle case where user identity is not found
+                return Unauthorized(); 
             }
             var RecruiterName = userIdClaim.Value;
             return await _iJobs.AddJobAsync(jobDto, RecruiterName);
@@ -37,11 +37,11 @@ namespace RecruitmentPortal.Controllers
         
         [HttpGet("getjobs-byRecent")]
         [Authorize(Roles = "Candidate,Admin,Recruiter")]
-        public async Task<IActionResult> GetJobsOrderedByRecent(int pageNumber = 1)
+        public async Task<IActionResult> GetJobsOrderedByRecent(int pageNumber = 1, int pageSize =10)
         {
             try
             {
-                var jobs = await _iJobs.GetJobsOrderedByRecentAsync(pageNumber);
+                var jobs = await _iJobs.GetJobsAsync(pageNumber, pageSize);
                 return Ok(jobs);
             }
             catch (Exception ex)
@@ -57,10 +57,6 @@ namespace RecruitmentPortal.Controllers
         {
             return await _iJobs.RemoveJobAsync(id);
         }
-
-
-
-
 
 
     }

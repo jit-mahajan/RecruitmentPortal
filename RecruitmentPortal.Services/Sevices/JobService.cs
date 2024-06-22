@@ -29,7 +29,7 @@ namespace RecruitmentPortal.Services.Sevices
         public async Task<ActionResult> AddJobAsync(JobDto jobDto, string recruiterName)
         {
 
-            int? recruiterId = await GetUserIdByUsernameAsync(recruiterName);
+            int? recruiterId = await GetIdByName.GetUserId(_context, recruiterName);
 
             if (recruiterId == null)
             {
@@ -56,12 +56,10 @@ namespace RecruitmentPortal.Services.Sevices
                 await _context.AddAsync(job);
                 await _context.SaveChangesAsync();
 
-                // Return success response
                 return new OkObjectResult(new { message = "Job added successfully" });
             }
             catch (Exception ex)
             {
-                // Return error response
                 return new ObjectResult(new { message = "An error occurred while adding the job", error = ex.Message })
                 {
                     StatusCode = 500
@@ -98,36 +96,38 @@ namespace RecruitmentPortal.Services.Sevices
             }
         }   
 
+        /*
         public async Task<int?> GetUserIdByUsernameAsync(string username)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Name == username);
             return user?.UserId;
         }
 
-        
-        public async Task<IEnumerable<JobDto>> GetJobsOrderedByRecentAsync(int pageNumber)
+        */
+        public async Task<(List<JobDto> Jobs, int TotalCount)> GetJobsAsync(int pageNumber, int pageSize)
         {
-            var jobs = await _context.Jobs
-                .OrderByDescending(j => j.PostedDate)
-                .Skip((pageNumber - 1) * 10)
-                .Take(10)
-                .Select(j => new JobDto
-                {
-                    
-                    JobTitle = j.JobTitle,
-                    Description = j.Description,
-                    CompanyName = j.CompanyName,
-                    Location = j.Location,
-                    JobType = j.JobType,
-                    Salary  = j.Salary,
-                    Qualifications = j.Qualifications
-        
-                })
-                .ToListAsync();
+            var query = _context.Jobs
+                                .Where(job => job.IsActive) 
+                                .OrderByDescending(job => job.PostedDate)
+                                .AsQueryable();
 
-            return jobs;
+            int totalCount = await query.CountAsync();
+            var jobs = await query.Skip((pageNumber - 1) * pageSize)
+                                  .Take(pageSize)
+                                  .Select(j => new JobDto
+                                  {
+                                      JobTitle = j.JobTitle,
+                                      Description = j.Description,
+                                      CompanyName = j.CompanyName,
+                                      Location = j.Location,
+                                      JobType = j.JobType,
+                                      Salary = j.Salary,
+                                      Qualifications = j.Qualifications
+                                  })
+                                  .ToListAsync();
+
+            return (jobs, totalCount);
         }
 
-       
     }
 }

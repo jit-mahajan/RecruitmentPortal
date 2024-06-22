@@ -35,7 +35,7 @@ namespace RecruitmentPortal.Services.Sevices
             _httpContextAccessor = httpContextAccessor;
             _itoken = itoken;   
         }
-        public async Task<ActionResult> RegisterAsync(RegisterUserDto model)
+        public async Task<ActionResult> RegisterAsync(UsersDto model)
         {
             try
             {
@@ -55,7 +55,7 @@ namespace RecruitmentPortal.Services.Sevices
                     return new BadRequestObjectResult(new { message = "Password must be at least 8 characters long and contain at least one uppercase letter, one special character, and one numeric character." });
                 }
 
-                string hashedPassword = HelperMethods.PasswordHelper.HashPassword(model.Password);
+                string hashedPassword = PasswordHelper.HashPassword(model.Password);
 
                 var user = new Users
                 {
@@ -82,14 +82,15 @@ namespace RecruitmentPortal.Services.Sevices
             }
             catch (Exception ex)
             {
-                // Log the exception here (actual logging not shown)
                 return new ObjectResult(new { message = "An error occurred while creating the user", error = ex.Message })
                 {
                     StatusCode = 500
                 };
             }
         }
-        public async Task<IActionResult> RegisterRecruiter(RegisterUserDto model)
+
+
+        public async Task<IActionResult> AddAdmin(UsersDto model)
         {
             try
             {
@@ -109,7 +110,62 @@ namespace RecruitmentPortal.Services.Sevices
                     return new BadRequestObjectResult(new { message = "Password does not meet complexity requirements" });
                 }
 
-                string hashedPassword = HelperMethods.PasswordHelper.HashPassword(model.Password);
+                string hashedPassword = PasswordHelper.HashPassword(model.Password);
+
+                var user = new Users
+                {
+                    Name = model.Name,
+                    Gender = model.Gender,
+                    ContactNo = model.ContactNo,
+                    Email = model.Email,
+                    Password = hashedPassword,
+                    IsActive = true,
+                    UserRoles = new[]
+                    {
+                        new UserRole
+                        {
+                            RoleId = _context.Roles.Single(r => r.RoleName == "Admin").RoleId
+                        }
+                    }
+
+                };
+
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+
+                return new OkObjectResult(new { message = "Admin created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return new ObjectResult(new { message = "An error occurred while creating the recruiter", error = ex.Message })
+                {
+                    StatusCode = 500
+                };
+            }
+        }
+
+
+        public async Task<IActionResult> RegisterRecruiter(UsersDto model)
+        {
+            try
+            {
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+                if (existingUser != null)
+                {
+                    return new ConflictObjectResult(new { message = "Email already exists" });
+                }
+
+                if (model.Password != model.ConfirmPassword)
+                {
+                    return new BadRequestObjectResult(new { message = "Passwords do not match" });
+                }
+
+                if (!IsPasswordValid(model.Password))
+                {
+                    return new BadRequestObjectResult(new { message = "Password does not meet complexity requirements" });
+                }
+
+                string hashedPassword = PasswordHelper.HashPassword(model.Password);
 
                 var user = new Users
                 {
@@ -143,7 +199,7 @@ namespace RecruitmentPortal.Services.Sevices
             }
         }
 
-        public async Task<IActionResult> UpdateRecruiter(int recruiterId, RegisterUserDto model)
+        public async Task<IActionResult> UpdateRecruiter(int recruiterId, UsersDto model)
         {
             try
             {
@@ -224,17 +280,21 @@ namespace RecruitmentPortal.Services.Sevices
         {
             try
             {
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-
-                if (user == null)
+                if (IsPasswordValid(newPassword))
                 {
-                    return new BadRequestObjectResult(new { message = "User not found" });
+                    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+                    if (user == null)
+                    {
+                        return new BadRequestObjectResult(new { message = "User not found" });
+                    }
+
+                    user.Password = HelperMethods.PasswordHelper.HashPassword(newPassword);
+                    await _context.SaveChangesAsync();
+
+                    return new OkObjectResult(new { message = "Password reset successfully" });
                 }
-
-                user.Password = HelperMethods.PasswordHelper.HashPassword(newPassword);
-                await _context.SaveChangesAsync();
-
-                return new OkObjectResult(new { message = "Password reset successfully" });
+                return new BadRequestObjectResult(new { message = "Password must be at least 8 characters long and contain at least one uppercase letter, one special character, and one numeric character." });
             }
             catch (Exception ex)
             {
@@ -259,7 +319,8 @@ namespace RecruitmentPortal.Services.Sevices
             }
             return  Task.FromResult(user);
         }
-
+        
+        /*
         public int GetCurrentUserId()
         {
             var httpContext = _httpContextAccessor.HttpContext;
@@ -274,18 +335,17 @@ namespace RecruitmentPortal.Services.Sevices
 
             return 0;
         }
-
-
-        public async Task<IEnumerable<CandidateDto>> GetAllCandidatesAsync(int pageNumber)
+        */
+        
+        public async Task<IEnumerable<UsersDto>> GetAllCandidatesAsync(int pageNumber)
         {
             try
             {
                 var candidates = await _context.Users
                     .Skip((pageNumber - 1) * 10)
                     .Take(10)
-                    .Select(u => new CandidateDto
+                    .Select(u => new UsersDto
                     {
-                        Id = u.UserId,
                         Name = u.Name,
                         Email = u.Email,
                         CreatedDate = u.CreatedDate
@@ -301,7 +361,7 @@ namespace RecruitmentPortal.Services.Sevices
             }
         }
 
-        public async Task<IEnumerable<RecruiterDto>> GetAllRecruitersAsync(int pageNumber)
+        public async Task<IEnumerable<UsersDto>> GetAllRecruitersAsync(int pageNumber)
         {
             try
             {
@@ -310,7 +370,7 @@ namespace RecruitmentPortal.Services.Sevices
                      .OrderByDescending(u => u.CreatedDate)
                      .Skip((pageNumber - 1) * 10)
                      .Take(10)
-                     .Select(u => new RecruiterDto
+                     .Select(u => new UsersDto
                      {
                          Name = u.Name,
                          Email = u.Email,
@@ -398,13 +458,14 @@ namespace RecruitmentPortal.Services.Sevices
         {
             var candidates = await _context.Users
                 .Where(u => u.UserRoles.Any(ur => ur.Role.RoleName == "Candidate"))
-                .Select(u => new CandidateDto
+                .Select(u => new UsersDto
                 {
-                    Id = u.UserId,
                     Name = u.Name,
                     Email = u.Email,
+                    Gender = u.Gender,
+                    ContactNo = u.ContactNo,
                     CreatedDate = u.CreatedDate
-                   
+
                 })
                .ToListAsync();
 
@@ -418,10 +479,12 @@ namespace RecruitmentPortal.Services.Sevices
         {
             var recruiters = await _context.Users
                 .Where(u => u.UserRoles.Any(ur => ur.Role.RoleName == "Recruiter"))
-                .Select(u => new RecruiterDto
+                .Select(u => new UsersDto
                 { 
                     Name = u.Name,
                     Email = u.Email,
+                    Gender = u.Gender,
+                    ContactNo = u.ContactNo,
                     CreatedDate = u.CreatedDate
 
                 })
@@ -430,12 +493,13 @@ namespace RecruitmentPortal.Services.Sevices
             string filePath = ExcelFiles.ExportToExcel(recruiters, "Recruiters");
             return filePath;
         }
-
+        
+        
         public async Task<int?> GetUserIdAsync(string usernameOrEmail)
         {
             return await GetIdByName.GetUserId(_context, usernameOrEmail);
         }
-
+        
 
     }
 

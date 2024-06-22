@@ -15,9 +15,15 @@ namespace RecruitmentPortal.Core.Entity
         public DateTime AppliedDate { get; set; }
 
         public int JobId { get; set; }
+
+        public string JobTitle { get; set; } = string.Empty;
+        public string CompanyName { get; set; } = string.Empty;
+
         public Jobs Jobs { get; set; }
 
         public int UserId { get; set; }
+
+        public string UserName { get; set; }
         public Users Users { get; set; }
     }
 }

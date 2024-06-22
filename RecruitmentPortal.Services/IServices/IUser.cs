@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using RecruitmentPortal.Core.Entity;
 using RecruitmentPortal.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -10,24 +11,25 @@ namespace RecruitmentPortal.Services.IServices
 {
     public interface IUser
     {
-        public Task<ActionResult> RegisterAsync(RegisterUserDto model);
+        Task<ActionResult> RegisterAsync(UsersDto model);
 
-        public Task<IActionResult> RegisterRecruiter(RegisterUserDto model);
+        Task<IActionResult> AddAdmin(UsersDto model);
+        public Task<IActionResult> RegisterRecruiter(UsersDto model);
 
-        public Task<IActionResult> UpdateRecruiter(int recruiterId, RegisterUserDto model);
+        Task<IActionResult> UpdateRecruiter(int recruiterId, UsersDto model);
 
 
-        public Task<ActionResult> LoginAsync(string email, string password);
+        Task<ActionResult> LoginAsync(string email, string password);
 
        
-        public Task<ActionResult> ResetPasswordAsync(string email, string newPassword);
+        Task<ActionResult> ResetPasswordAsync(string email, string newPassword);
 
-        public int GetCurrentUserId();
+       // public int GetCurrentUserId();
 
-      //  Task<int?> GetUserIdAsync(string usernameOrEmail);
+        Task<int?> GetUserIdAsync(string usernameOrEmail);
 
-        Task<IEnumerable<CandidateDto>> GetAllCandidatesAsync(int pageNumber);
-        Task<IEnumerable<RecruiterDto>> GetAllRecruitersAsync(int pageNumber);
+        Task<IEnumerable<UsersDto>> GetAllCandidatesAsync(int pageNumber);
+        Task<IEnumerable<UsersDto>> GetAllRecruitersAsync(int pageNumber);
 
         Task<bool> RemoveCandidateAsync(int candidateID);
         Task<bool> RemoveRecruiterAsync(int recruiterID);
@@ -36,7 +38,7 @@ namespace RecruitmentPortal.Services.IServices
 
        Task<string> ExportAllRecruitersAsync();
 
-       Task<int?> GetUserIdAsync(string usernameOrEmail);
+      //B Task<int?> GetUserIdAsync(string usernameOrEmail);
 
     }
 }

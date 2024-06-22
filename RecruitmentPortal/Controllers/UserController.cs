@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RecruitmentPortal.Core.Entity;
 using RecruitmentPortal.Core.Models;
 using RecruitmentPortal.Services.IServices;
 using RecruitmentPortal.Services.Sevices;
@@ -20,7 +21,7 @@ namespace RecruitmentPortal.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<ActionResult> Register(RegisterUserDto model)
+        public async Task<IActionResult> Register(UsersDto model)
         {
             return await _iUser.RegisterAsync(model);
         }
@@ -58,7 +59,7 @@ namespace RecruitmentPortal.Controllers
       
         [HttpGet("getAll-candidates")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<IEnumerable<CandidateDto>>> GetAllCandidatesAsync(int pageNumber = 1)
+        public async Task<ActionResult<IEnumerable<UsersDto>>> GetAllCandidatesAsync(int pageNumber = 1)
         {
             var candidates = await _iUser.GetAllCandidatesAsync(pageNumber);
             return Ok(candidates);
@@ -80,11 +81,19 @@ namespace RecruitmentPortal.Controllers
                 return NotFound(new { message = "Candidate not found" });
             }
         }
-        
+
+        [HttpPost("add-admin")]
+        [Authorize(Roles = "Admin")]
+
+        public async Task<IActionResult> AddAdmin(UsersDto model)
+        {
+            return await _iUser.AddAdmin(model);          
+        }
+
         [HttpPost("register-recruiter")]
         [Authorize(Roles = "Admin")]
 
-        public async Task<IActionResult> RegisterRecruiter(RegisterUserDto model)
+        public async Task<IActionResult> RegisterRecruiter(UsersDto model)
         {
             return await _iUser.RegisterRecruiter(model);
         }
@@ -92,7 +101,7 @@ namespace RecruitmentPortal.Controllers
 
         [HttpPut("update-recruiter/{recruiterId}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateRecruiter(int recruiterId, RegisterUserDto model)
+        public async Task<IActionResult> UpdateRecruiter(int recruiterId, UsersDto model)
         {
             return await _iUser.UpdateRecruiter(recruiterId, model);
         }
@@ -100,7 +109,7 @@ namespace RecruitmentPortal.Controllers
 
         [HttpGet("getAll-recruiters")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<IEnumerable<RecruiterDto>>> GetAllRecruitersAsync(int pageNumber = 1)
+        public async Task<ActionResult<IEnumerable<UsersDto>>> GetAllRecruitersAsync(int pageNumber = 1)
         {
             var recruiters = await _iUser.GetAllRecruitersAsync(pageNumber);
             return Ok(recruiters);

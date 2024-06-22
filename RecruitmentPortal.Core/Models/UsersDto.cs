@@ -7,19 +7,18 @@ using System.Threading.Tasks;
 
 namespace RecruitmentPortal.Core.Models
 {
-    public class RegisterUserDto
+    public class UsersDto
     {
+
         [Required]
         public string Name { get; set; }
 
         public string Gender { get; set; }
 
         [Required]
-        [StringLength(15, MinimumLength = 10, ErrorMessage = "Mobile number must be between 10 and 15 characters.")]
-        public string ContactNo { get; set; }  
+        public string ContactNo { get; set; }
 
         [Required]
-        [EmailAddress]
         public string Email { get; set; }
 
         [Required]
@@ -31,9 +30,10 @@ namespace RecruitmentPortal.Core.Models
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; }
 
+
+
         public DateTime? CreatedDate { get; set; } = DateTime.Now;
 
 
-
     }
- }
+}

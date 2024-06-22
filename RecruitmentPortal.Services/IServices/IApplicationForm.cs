@@ -12,15 +12,13 @@ namespace RecruitmentPortal.Services.IServices
     public interface IApplicationForm
     {
         Task<ActionResult> ApplyToJobAsync(JobApplicationDto jobApplicationDto);
-        Task<ActionResult> ApplyToMultipleJobsAsync(int userId, List<int> jobIds);
 
-        // Task<PaginatedList<JobApplicationDto>> GetJobApplicationsAsync(int pageNumber);
+        Task ApplyToMultipleJobsAsync(List<JobApplicationDto> jobApplicationDtos);
 
-        Task<List<JobApplicationDto>> GetJobApplicationsAppliedByCandidateAsync(int candidateId);
-        Task<PaginatedList<JobApplicationDto>> GetAppliedApplicationsForRecruiterAsync(int? recruiterId, int pageNumber);
-
+        Task<(List<JobApplicationDto> Applications, int TotalCount)> GetJobApplicationsAppliedByCandidateAsync(int candidateId, int pageNumber, int pageSize);
+  
+        Task<(List<JobApplicationDto> Applications, int TotalCount)> GetApplicantsForRecruiterJobsAsync(int recruiterId, int pageNumber, int pageSize);
         Task<string> ExportCandidatesAppliedToJobsAsync();
 
-        // Task<Stream> ExportCandidatesAppliedToJobsAsync();
     }
 }

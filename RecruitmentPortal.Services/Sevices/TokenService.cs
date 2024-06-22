@@ -37,7 +37,7 @@ namespace RecruitmentPortal.Services.Sevices
             var claims = new List<Claim> {
             new Claim(JwtRegisteredClaimNames.Sub, users.Name),
             new Claim(JwtRegisteredClaimNames.Email, users.Email),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.NameId, users.UserId.ToString())
             };
 
@@ -58,7 +58,6 @@ namespace RecruitmentPortal.Services.Sevices
                 signingCredentials: credentials
             );
 
-            //  return new JwtSecurityTokenHandler().WriteToken(token);
             return tokenHandler.WriteToken(token);
         }
 

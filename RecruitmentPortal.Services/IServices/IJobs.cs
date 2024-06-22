@@ -13,10 +13,8 @@ namespace RecruitmentPortal.Services.IServices
     public interface IJobs
     {
          Task<ActionResult> AddJobAsync(JobDto jobDto, string recruiterName);
-         Task<IEnumerable<JobDto>> GetJobsOrderedByRecentAsync(int pageNumber);
-       //  Task<ActionResult<IEnumerable<Jobs>>> GetAllJobsAsync();
 
-
+        Task<(List<JobDto> Jobs, int TotalCount)> GetJobsAsync(int pageNumber, int pageSize);
         Task<ActionResult> RemoveJobAsync(int id);
 
 

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
@@ -10,10 +11,13 @@ using RecruitmentPortal.Services.HelperMethods;
 using RecruitmentPortal.Services.IServices;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RecruitmentPortal.Services.Sevices
 {
@@ -31,13 +35,13 @@ namespace RecruitmentPortal.Services.Sevices
 
         }
 
-        
+
 
         public async Task<ActionResult> ApplyToJobAsync(JobApplicationDto jobApplicationDto)
         {
             try
             {
-          
+
                 var existingApplication = await _context.JobApplications
                     .FirstOrDefaultAsync(app => app.JobId == jobApplicationDto.JobId && app.UserId == jobApplicationDto.UserId);
 
@@ -66,6 +70,9 @@ namespace RecruitmentPortal.Services.Sevices
                 {
                     JobId = jobApplicationDto.JobId,
                     UserId = jobApplicationDto.UserId,
+                    UserName = jobApplicationDto.UserName,
+                    JobTitle = jobApplicationDto.JobTitle,
+                    CompanyName = jobApplicationDto.CompanyName,
                     AppliedDate = DateTime.Now
                 };
 
@@ -85,119 +92,134 @@ namespace RecruitmentPortal.Services.Sevices
 
 
 
-        public async Task<ActionResult> ApplyToMultipleJobsAsync(int userId, List<int> jobIds)
+        public async Task ApplyToMultipleJobsAsync(List<JobApplicationDto> jobApplicationDtos)
         {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
+            foreach (var jobApplicationDto in jobApplicationDtos)
             {
-                return new NotFoundObjectResult(new { message = "User not found" });
-            }
+                var userId = jobApplicationDto.UserId;
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    throw new ArgumentException($"User not found for UserId: {userId}");
+                }
 
-            var userEmail = user.Email;
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                return new BadRequestObjectResult(new { message = "User email is missing" });
-            }
+                var userEmail = user.Email;
+                if (string.IsNullOrEmpty(userEmail))
+                {
+                    throw new ArgumentException($"Email not found for User with UserId: {userId}");
+                }
 
-            var results = new List<object>();
-
-            foreach (var jobId in jobIds)
-            {
                 try
                 {
                     var existingApplication = await _context.JobApplications
-                        .FirstOrDefaultAsync(app => app.JobId == jobId && app.UserId == userId);
+                        .FirstOrDefaultAsync(app => app.JobId == jobApplicationDto.JobId && app.UserId == userId);
 
                     if (existingApplication != null)
                     {
-                        results.Add(new { JobId = jobId, message = "You have already applied for this job" });
+
                         continue;
                     }
 
-                    var jobExists = await _context.Jobs.AnyAsync(j => j.JobId == jobId && j.IsActive);
+                    var jobExists = await _context.Jobs.AnyAsync(j => j.JobId == jobApplicationDto.JobId && j.IsActive);
                     if (!jobExists)
                     {
-                        results.Add(new { JobId = jobId, message = "Job not found or is inactive" });
-                        continue;
+                        throw new ArgumentException($"Job not found or is inactive for JobId: {jobApplicationDto.JobId}");
+                    }
+
+                    var job = await _context.Jobs.FindAsync(jobApplicationDto.JobId);
+                    if (job == null)
+                    {
+                        throw new ArgumentException($"Job not found for JobId: {jobApplicationDto.JobId}");
                     }
 
                     var jobApplication = new JobApplication
                     {
-                        JobId = jobId,
+                        JobId = jobApplicationDto.JobId,
                         UserId = userId,
+                        UserName = jobApplicationDto.UserName,
+                        JobTitle = job.JobTitle,
+                        CompanyName = job.CompanyName,
                         AppliedDate = DateTime.UtcNow
                     };
 
                     _context.JobApplications.Add(jobApplication);
                     await _context.SaveChangesAsync();
 
-                    // Send email notification
-                    var jobTitle = (await _context.Jobs.FindAsync(jobId))?.JobTitle ?? "the job";
-                    await _iEmail.SendEmailAsync(userEmail, "Job Application", $"Your job application for Role {jobTitle} submitted successfully.");
-
-                    results.Add(new { JobId = jobId, message = "Job application submitted successfully" });
+                   
+                    await _iEmail.SendEmailAsync(userEmail, "Job Application", $"Your job application for Role {job.JobTitle} submitted successfully");
                 }
                 catch (Exception ex)
                 {
-                    results.Add(new { JobId = jobId, message = "An error occurred while adding the job", error = ex.Message });
+                    
+                    throw new Exception($"Failed to apply for JobId: {jobApplicationDto.JobId}", ex);
                 }
             }
-
-            return new OkObjectResult(results);
         }
 
-
-        public async Task<PaginatedList<JobApplicationDto>> GetAppliedApplicationsForRecruiterAsync(int? recruiterId, int pageNumber)
+        public async Task<(List<JobApplicationDto> Applications, int TotalCount)> GetJobApplicationsAppliedByCandidateAsync(int candidateId, int pageNumber, int pageSize)
         {
-            try
-            {
+            // Query to get applications by the candidate
+            var query = _context.JobApplications
+                                .Where(app => app.UserId == candidateId)
+                                .Include(app => app.Jobs)
+                                .OrderByDescending(app => app.AppliedDate)
+                                .AsQueryable();
 
-                var query = _context.JobApplications
-                    .Where(app => app.Jobs.RecruiterId == recruiterId)
-                    .OrderByDescending(app => app.AppliedDate)
-                    .Select(app => new JobApplicationDto
-                    {
-                        JobApplicationId = app.JobApplicationId,
-                        AppliedDate = app.AppliedDate,
-                        JobId = app.JobId,
-                        UserId = app.UserId,
-                        UserName = app.Users.Name,
-                        JobTitle = app.Jobs.JobTitle,
-                        CompanyName = app.Jobs.CompanyName
-                    });
+            // Get total count of applications
+            int totalCount = await query.CountAsync();
 
-                return await PaginatedList<JobApplicationDto>.CreateAsync(query, pageNumber);
-            }
-            catch (Exception ex)
+            // Get paginated applications
+            var applications = await query.Skip((pageNumber - 1) * pageSize)
+                                          .Take(pageSize)
+                                          .ToListAsync();
+
+            // Manually map to JobApplicationDto
+            var applicationDtos = applications.Select(app => new JobApplicationDto
             {
-                // Log the exception if needed
-                throw new ApplicationException("An error occurred while fetching job applications.", ex);
-            }
+                JobId = app.JobId,
+                UserId = app.UserId,
+                UserName = app.Users.Name,  // Assuming Users property is included and has a Name field
+                JobTitle = app.Jobs.JobTitle,
+                CompanyName = app.Jobs.CompanyName,
+                AppliedDate = app.AppliedDate
+            }).ToList();
+
+            return (applicationDtos, totalCount);
         }
 
-        public async Task<List<JobApplicationDto>> GetJobApplicationsAppliedByCandidateAsync(int candidateId)
+        public async Task<(List<JobApplicationDto> Applications, int TotalCount)> GetApplicantsForRecruiterJobsAsync(int recruiterId, int pageNumber, int pageSize)
         {
-            var jobApplications = await _context.JobApplications
-                            .Include(j => j.Jobs) 
-                            .Include(j => j.Users) 
-                            .Where(j => j.UserId == candidateId)
-                            .OrderByDescending(j => j.AppliedDate)
-                            .Select(j => new JobApplicationDto
-                            {
-                                JobApplicationId = j.JobApplicationId,
-                                JobId = j.JobId,
-                                UserId = j.UserId,
-                                UserName = j.Users.Name, 
-                                JobTitle = j.Jobs.JobTitle, 
-                                CompanyName = j.Jobs.CompanyName,
-                                AppliedDate = j.AppliedDate
-                            })
-                            .ToListAsync();
+ 
+            var recruiterJobs = _context.Jobs
+                                        .Where(job => job.RecruiterId == recruiterId)
+                                        .Select(job => job.JobId)
+                                        .AsQueryable();
 
+            var query = _context.JobApplications
+                                .Where(app => recruiterJobs.Contains(app.JobId))
+                                .Include(app => app.Jobs)
+                                .Include(app => app.Users)
+                                .OrderByDescending(app => app.AppliedDate)
+                                .AsQueryable();
 
-            return jobApplications;
+            int totalCount = await query.CountAsync();
+
+            var applications = await query.Skip((pageNumber - 1) * pageSize)
+                                          .Take(pageSize)
+                                          .ToListAsync();
+
+            var applicationDtos = applications.Select(app => new JobApplicationDto
+            {
+                JobId = app.JobId,
+                UserId = app.UserId,
+                UserName = app.Users.Name,
+                JobTitle = app.Jobs.JobTitle,
+                CompanyName = app.Jobs.CompanyName,
+                AppliedDate = app.AppliedDate
+            }).ToList();
+
+            return (applicationDtos, totalCount);
         }
-
         public async Task<string> ExportCandidatesAppliedToJobsAsync()
         {
             var jobApplications = await _context.JobApplications

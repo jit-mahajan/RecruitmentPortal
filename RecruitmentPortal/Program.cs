@@ -4,7 +4,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OfficeOpenXml;
 using RecruitmentPortal.Infrastructure.Data;
-using RecruitmentPortal.Infrastructure.Mappings;
 using RecruitmentPortal.Services.Email;
 using RecruitmentPortal.Services.IServices;
 using RecruitmentPortal.Services.Sevices;
@@ -12,8 +11,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddAutoMapper(typeof(MappingProfile));            
 
 builder.Services.AddControllers()
 
